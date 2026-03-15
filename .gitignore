@@ -1,0 +1,51 @@
+# 模型权重文件（用户自行训练生成，不上传）
+*.pt
+*.pth
+*.onnx
+*.engine
+
+# 数据集（自动下载，不上传）
+mnist/
+datasets/
+*.zip
+*.tar
+*.gz
+
+# 训练/推理日志与缓存
+runs/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# 虚拟环境
+venv/
+env/
+.venv/
+ENV/
+
+# IDE配置文件
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# 系统缓存文件
+.DS_Store
+Thumbs.db
