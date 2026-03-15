@@ -67,5 +67,6 @@ Handwritten-Digit-Recognition-YOLOv8/
 - ✅ Python 3.8 ~ 3.11
 - ✅ 支持 Windows/macOS/Linux
 - ⚡ 可选：NVIDIA显卡 + CUDA环境（大幅提升训练速度）
+---
 ##📄 许可证
--本项目采用 Apache-2.0 许可证，仅供学习交流与面试展示使用。
+- 本项目采用 Apache-2.0 许可证，仅供学习交流与面试展示使用。
