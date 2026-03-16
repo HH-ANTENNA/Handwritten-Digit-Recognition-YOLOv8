@@ -76,9 +76,9 @@ class SimpleDigitApp:
         self.root = root
         self.model = model
         self.root.title("手写数字识别 ")
-        self.root.geometry("500x600")
+        self.root.geometry("2500x2000") # 此处可更改窗口尺寸，自由决定绘画空间
 
-        self.canvas = Canvas(root, width=400, height=400, bg="white")
+        self.canvas = Canvas(root, width=2000, height=1200, bg="white") # 画布尺寸可调整，越大绘画空间越大，但可能需要更高性能的GPU支持
         self.canvas.pack(pady=20)
         self.res_label = Label(root, text="识别结果：无", font=("Arial", 24), fg="red")
         self.res_label.pack(pady=10)
@@ -88,7 +88,7 @@ class SimpleDigitApp:
         Button(btn_frame, text="清空", command=self.clear, font=("Arial", 16)).grid(row=0, column=0, padx=20)
         Button(btn_frame, text="识别", command=self.recognize, font=("Arial", 16)).grid(row=0, column=1, padx=20)
 
-        self.img = Image.new("L", (400, 400), 255)
+        self.img = Image.new("L", (2000, 1200), 255)  # 与画布尺寸一致
         self.draw = ImageDraw.Draw(self.img)
         self.last_xy = None
         self.canvas.bind("<B1-Motion>", self.draw_line)
@@ -102,7 +102,7 @@ class SimpleDigitApp:
 
     def clear(self):
         self.canvas.delete("all")
-        self.img = Image.new("L", (400, 400), 255)
+        self.img = Image.new("L", (2000, 1200), 255)    # 与画布尺寸一致
         self.draw = ImageDraw.Draw(self.img)
         self.res_label.config(text="识别结果：无")
 
