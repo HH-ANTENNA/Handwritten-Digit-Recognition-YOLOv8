@@ -165,35 +165,82 @@ class SimpleDigitApp:
         return img_np
 
     def _segment_digits(self, img):
-        """根据竖直投影分割出画布上的每个数字区域。"""
+        """基于连通域分割画布上的每个数字区域。支持多行手写数字。"""
         gray = img.convert("L")
         np_img = np.array(gray, dtype=np.uint8)
         # 简易阈值：把明显笔迹提取出来
         bin_img = (np_img < 200).astype(np.uint8)
 
-        cols = np.any(bin_img > 0, axis=0)
-        segments = []
-        start = None
-        for i, has in enumerate(cols):
-            if has and start is None:
-                start = i
-            elif not has and start is not None:
-                segments.append((start, i))
-                start = None
-        if start is not None:
-            segments.append((start, len(cols)))
+        h, w = bin_img.shape
+        labels = np.zeros_like(bin_img, dtype=np.int32)
+        bboxes = []
+        cur_label = 0
 
-        digit_imgs = []
-        for left, right in segments:
-            # 扩展一点宽度，避免切掉笔画
-            left = max(0, left - 6)
-            right = min(bin_img.shape[1], right + 6)
-            crop = img.crop((left, 0, right, img.height))
-            digit_imgs.append(self.preprocess_image(crop))
+        # 4-连通域标记（含对角），提取每个连通区域的边界框
+        for y in range(h):
+            for x in range(w):
+                if bin_img[y, x] and labels[y, x] == 0:
+                    cur_label += 1
+                    labels[y, x] = cur_label
+                    stack = [(y, x)]
+                    min_x = max_x = x
+                    min_y = max_y = y
+                    while stack:
+                        yy, xx = stack.pop()
+                        for dy in (-1, 0, 1):
+                            ny = yy + dy
+                            if ny < 0 or ny >= h:
+                                continue
+                            for dx in (-1, 0, 1):
+                                nx = xx + dx
+                                if nx < 0 or nx >= w:
+                                    continue
+                                if bin_img[ny, nx] and labels[ny, nx] == 0:
+                                    labels[ny, nx] = cur_label
+                                    stack.append((ny, nx))
+                                    min_x = min(min_x, nx)
+                                    max_x = max(max_x, nx)
+                                    min_y = min(min_y, ny)
+                                    max_y = max(max_y, ny)
+                    bboxes.append((min_x, min_y, max_x + 1, max_y + 1))
+
+        # 过滤掉噪声（过小连通域）
+        bboxes = [b for b in bboxes if (b[2] - b[0]) * (b[3] - b[1]) > 50]
 
         # 如果无法分割出多个数字，则直接返回整个画布的预处理结果
-        if not digit_imgs:
+        if not bboxes:
             return [self.preprocess_image(img)]
+
+        # 先按 y 排序，再按 x 排序，保证多行数字按阅读顺序排列
+        # 这里将连通域按行分组：先按 y 排序，再按行间距聚类，确保每行从左到右输出
+        bboxes.sort(key=lambda b: (b[1], b[0]))
+        heights = [b[3] - b[1] for b in bboxes]
+        avg_h = np.mean(heights) if heights else 0
+        row_gap = max(20, avg_h * 0.6)
+
+        rows = []  # [(row_center_y, [bboxes...]), ...]
+        for b in bboxes:
+            y_center = (b[1] + b[3]) / 2
+            if not rows or y_center - rows[-1][0] > row_gap:
+                rows.append([y_center, [b]])
+            else:
+                rows[-1][1].append(b)
+
+        ordered_bboxes = []
+        for _, row in rows:
+            row_sorted = sorted(row, key=lambda b: b[0])  # 按 x 轴从左到右
+            ordered_bboxes.extend(row_sorted)
+
+        digit_imgs = []
+        for xmin, ymin, xmax, ymax in ordered_bboxes:
+            pad = 5
+            xmin2 = max(0, xmin - pad)
+            ymin2 = max(0, ymin - pad)
+            xmax2 = min(w, xmax + pad)
+            ymax2 = min(h, ymax + pad)
+            crop = img.crop((xmin2, ymin2, xmax2, ymax2))
+            digit_imgs.append(self.preprocess_image(crop))
+
         return digit_imgs
 
     def recognize(self):
